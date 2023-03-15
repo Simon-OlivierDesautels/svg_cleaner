@@ -1,3 +1,5 @@
+<a name="readme-top"></a>
+
 ## About The Project
 
 This is a command-line tool for modifying SVG files in bulk. The tool reads all SVG files in the `svg` folder, applies various modifications to the files, and saves the modified files to the `svg_output` folder.
