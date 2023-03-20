@@ -68,7 +68,8 @@ fn main() {
             format!("{}-{}{{", &caps[0][1..caps[0].len() - 1], random_string)
         });
         // Use a regular expression to remove the specified string
-        let re1 = Regex::new(r#"<clipPath.*?</clipPath>"#).unwrap();
+        // Regex::new(r#"<defs>.*?</defs>"#).unwrap();
+        let re1 = Regex::new(r#"<defs>[\s\S]*?</defs>"#).unwrap();
         let modified_file_contents = re1.replace_all(&modified_file_contents, "");
 
         let re2 = Regex::new(r#"clip-path=".*?""#).unwrap();
