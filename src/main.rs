@@ -1,4 +1,13 @@
 use clap::{App, Arg};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use regex::Regex;
+use std::fmt::format;
+use std::fs::read_dir;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
+use std::io::LineWriter;
 use std::path::Path;
 use std::{io, vec};
 
@@ -23,35 +32,58 @@ fn main() {
     ];
 
     verify_folders(folders);
-    
-    // TODO: Get a list of all the file names in the svg folder
-    read_directory();
 
-    // let file_names = read_dir(svg_folder)
-    // .unwrap()
-    // .map(|entry| entry.unwrap().file_name().into_string().unwrap())
-    // .collect::<Vec<String>>();
+    // TODO: Get a list of all the file names in the svg folder
+    let file_names = read_dir(folders[0])
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .filter(|entry| Path::new(entry).extension().unwrap() == "svg")
+        .collect::<Vec<String>>();
 
     // TODO: Iterate through the list of file names
 
-    // Build the file path
+    for file_name in file_names {
+        // Build the file path
+        let file_path = format!("{}/{}", folders[0], file_name);
 
-    // Open the file in read-only mode
+        // Open the file in read-only mode
+        let file = File::open(&file_path).unwrap();
+        let mut buf_reader = BufReader::new(file);
 
-    // Generate a random 6 character string
+        // Generate a random 6 character string
+        let random_string: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(6)
+            .map(char::from)
+            .collect();
 
-    // Read the entire contents of the file into a string
+        // Read the entire contents of the file into a string
+        let mut file_contents = String::new();
+        buf_reader.read_to_string(&mut file_contents).unwrap();
 
-    // Replace all instances of ".st" followed by any characters until "{"
-    // with the same string followed by a hyphen and the random string
+        // Replace all instances of ".st" followed by any characters until "{"
+        // with the same string followed by a hyphen and the random string
+        let re = Regex::new(r"\.st.*?\{").unwrap();
+        let modified_file_contents = re.replace_all(&file_contents, |caps: &regex::Captures| {
+            format!("{}-{}{{", &caps[0][1..caps[0].len() - 1], random_string)
+        });
+        // Use a regular expression to remove the specified string
+        let re1 = Regex::new(r#"<clipPath.*?</clipPath>"#).unwrap();
+        let modified_file_contents = re1.replace_all(&modified_file_contents, "");
 
-    // Use a regular expression to remove the specified string
+        let re2 = Regex::new(r#"clip-path=".*?""#).unwrap();
+        let modified_file_contents = re2.replace_all(&modified_file_contents, "");
 
-    // Write the modified string to the output file
-
-    // let x = read_dir(svg_folder).unwrap().map();
-
-    // println!("{:#?}", file_names);
+        // Write the modified string to the output file
+        let mut file_out =
+            LineWriter::new(File::create(format!("{}/{}", folders[1], file_name)).unwrap());
+        for line in modified_file_contents.lines() {
+            let strip_line = line.trim();
+            if !strip_line.is_empty() {
+                writeln!(file_out, "{}", line).unwrap();
+            }
+        }
+    }
 }
 
 fn verify_folders(directories: [&str; 2]) {
@@ -65,8 +97,4 @@ fn verify_folders(directories: [&str; 2]) {
         }
     }
     println!("All clear");
-}
-
-fn read_directory() {
-    return;
 }
