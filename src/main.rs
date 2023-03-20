@@ -2,14 +2,12 @@ use clap::{App, Arg};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use regex::Regex;
-use std::fmt::format;
 use std::fs::read_dir;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 use std::io::LineWriter;
 use std::path::Path;
-use std::{io, vec};
 
 fn main() {
     // TODO: Get input and output folders from user
@@ -21,10 +19,7 @@ fn main() {
         .arg(Arg::new("output_folder").required(true).index(2))
         .get_matches();
 
-    // let svg_folder = define_folder(String::from(app.value_of("input_folder").unwrap()));
-    // let svg_output_folder = define_folder(app.value_of("output_folder").unwrap());
     // TODO:Make sure folders exists
-    // ,app.value_of("output_folder")
 
     let folders = [
         app.value_of("input_folder").unwrap(),
