@@ -2,6 +2,7 @@ use clap::{App, Arg};
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use regex::Regex;
+use std::fs;
 use std::fs::read_dir;
 use std::fs::File;
 use std::io::prelude::*;
@@ -15,33 +16,39 @@ fn main() {
         .version("1.0")
         .author("Simon-Olivier Desautels")
         .about("A cli for cleaning svg for the web")
-        .arg(Arg::new("input_folder").required(true).index(1))
-        .arg(Arg::new("output_folder").required(true).index(2))
+        .arg(Arg::new("output_folder").required(false).index(1))
+        // .arg(Arg::new("output_folder").required(true).index(2))
         .get_matches();
 
     // TODO:Make sure folders exists
 
-    let folders = [
-        app.value_of("input_folder").unwrap(),
-        app.value_of("output_folder").unwrap(),
-    ];
+    // let folders = [
+    //     app.value_of("input_folder").unwrap(),
+    //     app.value_of("output_folder").unwrap(),
+    // ];
+    let input_folder = "./";
+    let mut output_folder = String::from(app.value_of("output_folder").unwrap_or(""));
 
-    verify_folders(folders);
+    output_folder = verify_output_dir(output_folder);
 
     // TODO: Get a list of all the file names in the svg folder
-    let file_names = read_dir(folders[0])
+    let file_names = read_dir(input_folder)
         .unwrap()
         .map(|entry| entry.unwrap().file_name().into_string().unwrap())
+        .filter(|entry| Path::new(entry).is_dir() == false)
+        .filter(|entry| Path::new(entry).extension().is_some())
         .filter(|entry| Path::new(entry).extension().unwrap() == "svg")
         .collect::<Vec<String>>();
+    println!("{:#?}", &file_names);
 
     // TODO: Iterate through the list of file names
 
     for file_name in file_names {
         // Build the file path
-        let file_path = format!("{}/{}", folders[0], file_name);
-
+        let file_path = format!("{}/{}", input_folder, file_name);
+        println!("{}", &file_path);
         // Open the file in read-only mode
+
         let file = File::open(&file_path).unwrap();
         let mut buf_reader = BufReader::new(file);
 
@@ -58,9 +65,9 @@ fn main() {
 
         // Replace all instances of ".st" followed by any characters until "{"
         // with the same string followed by a hyphen and the random string
-        let re = Regex::new(r"\.st.*?\{").unwrap();
+        let re = Regex::new(r"st\d+").unwrap();
         let modified_file_contents = re.replace_all(&file_contents, |caps: &regex::Captures| {
-            format!("{}-{}{{", &caps[0][1..caps[0].len() - 1], random_string)
+            format!("{}-{}", &caps[0], &random_string)
         });
         // Use a regular expression to remove the specified string
         // Regex::new(r#"<defs>.*?</defs>"#).unwrap();
@@ -70,9 +77,14 @@ fn main() {
         let re2 = Regex::new(r#"clip-path=".*?""#).unwrap();
         let modified_file_contents = re2.replace_all(&modified_file_contents, "");
 
+        let re3 = Regex::new(r#"<clipPath*?[\s\S]*?</clipPath>"#).unwrap();
+        let modified_file_contents = re3.replace_all(&modified_file_contents, "");
+
+        let re4 = Regex::new(r#"clip-path:*?[\s\S]*?;"#).unwrap();
+        let modified_file_contents = re4.replace_all(&modified_file_contents, "");
         // Write the modified string to the output file
         let mut file_out =
-            LineWriter::new(File::create(format!("{}/{}", folders[1], file_name)).unwrap());
+            LineWriter::new(File::create(format!("{}/{}", output_folder, file_name)).unwrap());
         for line in modified_file_contents.lines() {
             let strip_line = line.trim();
             if !strip_line.is_empty() {
@@ -82,15 +94,18 @@ fn main() {
     }
 }
 
-fn verify_folders(directories: [&str; 2]) {
-    for directory_name in directories {
-        let input_value = directory_name.trim().to_string();
-        let path_to_input = Path::new(&input_value);
+fn verify_output_dir(output: String) -> String {
+    // for directory_name in directories {
+    let mut input_value = output.trim().to_string();
+    let path_to_input = Path::new(&input_value);
 
-        if path_to_input.is_dir() == false {
-            println!("There seem to be no '{}' directory", &input_value);
-            std::process::exit(1);
-        }
+    if path_to_input.is_dir() == false {
+        if input_value == "" {
+            input_value = String::from("ouput");
+            fs::create_dir_all("ouput").unwrap();
+        } else {
+            fs::create_dir_all(&input_value).unwrap();
+        };
     }
-    println!("All clear");
+    input_value
 }
