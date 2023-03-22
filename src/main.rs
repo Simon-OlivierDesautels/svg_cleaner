@@ -39,14 +39,12 @@ fn main() {
         .filter(|entry| Path::new(entry).extension().is_some())
         .filter(|entry| Path::new(entry).extension().unwrap() == "svg")
         .collect::<Vec<String>>();
-    println!("{:#?}", &file_names);
 
     // TODO: Iterate through the list of file names
 
     for file_name in file_names {
         // Build the file path
         let file_path = format!("{}/{}", input_folder, file_name);
-        println!("{}", &file_path);
         // Open the file in read-only mode
 
         let file = File::open(&file_path).unwrap();
@@ -92,6 +90,8 @@ fn main() {
             }
         }
     }
+    println!("Great Success!");
+    println!("https://www.youtube.com/watch?v=r13riaRKGo0&ab_channel=LeFantasque");
 }
 
 fn verify_output_dir(output: String) -> String {
